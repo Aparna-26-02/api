@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from models.schemas import Student
 from utils.security import verify_token
 from data.storage import students
@@ -7,26 +7,20 @@ import logging
 router = APIRouter()
 
 @router.get("/students")
-def get_students(token: str = Header(...)):
-    verify_token(token)
+def get_students(user=Depends(verify_token)):
     return students
 
 
 @router.get("/students/{student_id}")
-def get_student(student_id: int, token: str = Header(...)):
-    verify_token(token)
-
+def get_student(student_id: int, user=Depends(verify_token)):
     for student in students:
         if student["id"] == student_id:
             return student
-
     raise HTTPException(status_code=404, detail="Student not found")
 
 
 @router.post("/students")
-def add_student(student: Student, token: str = Header(...)):
-    verify_token(token)
-
+def add_student(student: Student, user=Depends(verify_token)):
     for s in students:
         if s["id"] == student.id:
             raise HTTPException(status_code=400, detail="ID already exists")
@@ -36,9 +30,7 @@ def add_student(student: Student, token: str = Header(...)):
 
 
 @router.put("/students/{student_id}")
-def update_student(student_id: int, updated_student: Student, token: str = Header(...)):
-    verify_token(token)
-
+def update_student(student_id: int, updated_student: Student, user=Depends(verify_token)):
     for index, student in enumerate(students):
         if student["id"] == student_id:
             students[index] = updated_student.dict()
@@ -48,9 +40,7 @@ def update_student(student_id: int, updated_student: Student, token: str = Heade
 
 
 @router.delete("/students/{student_id}")
-def delete_student(student_id: int, token: str = Header(...)):
-    verify_token(token)
-
+def delete_student(student_id: int, user=Depends(verify_token)):
     for student in students:
         if student["id"] == student_id:
             students.remove(student)
@@ -60,12 +50,9 @@ def delete_student(student_id: int, token: str = Header(...)):
 
 
 @router.get("/search")
-def search_student(name: str = Query(...), token: str = Header(...)):
-    verify_token(token)
-
+def search_student(name: str = Query(...), user=Depends(verify_token)):
     result = [
         student for student in students
         if name.lower() in student["name"].lower()
     ]
-
     return result
