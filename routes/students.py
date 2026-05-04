@@ -6,8 +6,10 @@ import logging
 
 router = APIRouter()
 
+
 @router.get("/students")
 def get_students(user=Depends(verify_token)):
+    logging.info(f"{user['sub']} fetched all students")
     return students
 
 
@@ -26,6 +28,7 @@ def add_student(student: Student, user=Depends(verify_token)):
             raise HTTPException(status_code=400, detail="ID already exists")
 
     students.append(student.dict())
+    logging.info(f"{user['sub']} added student {student.id}")
     return {"message": "Student added"}
 
 
@@ -34,6 +37,7 @@ def update_student(student_id: int, updated_student: Student, user=Depends(verif
     for index, student in enumerate(students):
         if student["id"] == student_id:
             students[index] = updated_student.dict()
+            logging.info(f"{user['sub']} updated student {student_id}")
             return {"message": "Student updated"}
 
     raise HTTPException(status_code=404, detail="Student not found")
@@ -44,6 +48,7 @@ def delete_student(student_id: int, user=Depends(verify_token)):
     for student in students:
         if student["id"] == student_id:
             students.remove(student)
+            logging.info(f"{user['sub']} deleted student {student_id}")
             return {"message": "Student deleted"}
 
     raise HTTPException(status_code=404, detail="Student not found")
@@ -55,4 +60,9 @@ def search_student(name: str = Query(...), user=Depends(verify_token)):
         student for student in students
         if name.lower() in student["name"].lower()
     ]
+
+    if not result:
+        raise HTTPException(status_code=404, detail="No students found")
+
+    logging.info(f"{user['sub']} searched for {name}")
     return result
